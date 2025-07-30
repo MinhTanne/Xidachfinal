@@ -113,7 +113,7 @@ public class HomeScreen extends JFrame {
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setOpaque(false);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 50));
 
         // Title
         JLabel titleLabel = new JLabel("♠ BLACKJACK ♥");
@@ -127,11 +127,11 @@ public class HomeScreen extends JFrame {
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Spacing
-        centerPanel.add(Box.createVerticalStrut(80));
+        centerPanel.add(Box.createVerticalStrut(40));
         centerPanel.add(titleLabel);
         centerPanel.add(Box.createVerticalStrut(10));
         centerPanel.add(subtitleLabel);
-        centerPanel.add(Box.createVerticalStrut(60));
+        centerPanel.add(Box.createVerticalStrut(40));
 
         // Player name input
         JLabel nameLabel = new JLabel("Nhập tên của bạn:");
@@ -148,13 +148,19 @@ public class HomeScreen extends JFrame {
         centerPanel.add(nameLabel);
         centerPanel.add(Box.createVerticalStrut(10));
         centerPanel.add(playerNameField);
-        centerPanel.add(Box.createVerticalStrut(30));
+        centerPanel.add(Box.createVerticalStrut(25));
 
         // Server connection section
         JLabel connectionLabel = new JLabel("══ THÔNG TIN KẾT NỐI ══");
         connectionLabel.setFont(new Font("Arial", Font.BOLD, 14));
         connectionLabel.setForeground(Color.YELLOW);
         connectionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Create a sub-panel for connection info
+        JPanel connectionPanel = new JPanel();
+        connectionPanel.setLayout(new BoxLayout(connectionPanel, BoxLayout.Y_AXIS));
+        connectionPanel.setOpaque(false);
+        connectionPanel.setMaximumSize(new Dimension(400, 120));
 
         // Server IP input
         JLabel ipLabel = new JLabel("Địa chỉ IP Server:");
@@ -164,9 +170,13 @@ public class HomeScreen extends JFrame {
 
         serverIPField = new JTextField("localhost");
         serverIPField.setFont(new Font("Arial", Font.PLAIN, 12));
-        serverIPField.setMaximumSize(new Dimension(200, 25));
+        serverIPField.setMaximumSize(new Dimension(200, 28));
         serverIPField.setAlignmentX(Component.CENTER_ALIGNMENT);
         serverIPField.setHorizontalAlignment(JTextField.CENTER);
+        serverIPField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
 
         // Server Port input
         JLabel portLabel = new JLabel("Cổng Server:");
@@ -176,20 +186,27 @@ public class HomeScreen extends JFrame {
 
         serverPortField = new JTextField("12345");
         serverPortField.setFont(new Font("Arial", Font.PLAIN, 12));
-        serverPortField.setMaximumSize(new Dimension(100, 25));
+        serverPortField.setMaximumSize(new Dimension(120, 28));
         serverPortField.setAlignmentX(Component.CENTER_ALIGNMENT);
         serverPortField.setHorizontalAlignment(JTextField.CENTER);
+        serverPortField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
+
+        // Add to connection panel
+        connectionPanel.add(ipLabel);
+        connectionPanel.add(Box.createVerticalStrut(5));
+        connectionPanel.add(serverIPField);
+        connectionPanel.add(Box.createVerticalStrut(10));
+        connectionPanel.add(portLabel);
+        connectionPanel.add(Box.createVerticalStrut(5));
+        connectionPanel.add(serverPortField);
 
         centerPanel.add(connectionLabel);
         centerPanel.add(Box.createVerticalStrut(15));
-        centerPanel.add(ipLabel);
-        centerPanel.add(Box.createVerticalStrut(5));
-        centerPanel.add(serverIPField);
-        centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(portLabel);
-        centerPanel.add(Box.createVerticalStrut(5));
-        centerPanel.add(serverPortField);
-        centerPanel.add(Box.createVerticalStrut(30));
+        centerPanel.add(connectionPanel);
+        centerPanel.add(Box.createVerticalStrut(25));
 
         // Buttons
         startGameButton = createStyledButton("🎮 BẮT ĐẦU CHƠI", new Color(50, 205, 50), Color.WHITE);
@@ -212,6 +229,7 @@ public class HomeScreen extends JFrame {
         centerPanel.add(startGameButton);
         centerPanel.add(Box.createVerticalStrut(20));
         centerPanel.add(exitButton);
+        centerPanel.add(Box.createVerticalStrut(20)); // Thêm space cuối
 
         return centerPanel;
     }
