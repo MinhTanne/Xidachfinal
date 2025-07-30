@@ -1,0 +1,15 @@
+# Build class 
+*.class 
+# IDE assets (IntelliJ IDEA, VS Code, eclipse, etc.)
+.idea/
+.vscode/
+.settings/
+# Eclipse specific files
+.classpath
+.project
+# Build output
+target/
+bin/
+out/ 
+# Log files
+*.log
