@@ -278,6 +278,25 @@ public class Blackjack implements Serializable {
             return;
         }
 
+        // Kiểm tra giới hạn tối đa 5 lá bài
+        if (playersHands.get(currentPlayerIndex).size() >= 5) {
+            System.out.println("Player " + currentPlayerIndex + " đã đạt giới hạn tối đa 5 lá bài!");
+            return;
+        }
+
+        // Kiểm tra nếu đã đạt 21 điểm thì không được rút thêm
+        if (playersSums.get(currentPlayerIndex) == 21) {
+            System.out.println("Player " + currentPlayerIndex + " đã đạt 21 điểm, không thể rút thêm bài!");
+            return;
+        }
+
+        // Kiểm tra nếu deck còn bài
+        if (deck.isEmpty()) {
+            System.out.println("Hết bài! Tạo bộ bài mới...");
+            buildDeck();
+            shuffleDeck();
+        }
+
         Card card = deck.remove(deck.size() - 1);
         playersHands.get(currentPlayerIndex).add(card);
         
@@ -305,6 +324,17 @@ public class Blackjack implements Serializable {
             playersResults.set(currentPlayerIndex, "Thua!");
             System.out.println("Player " + currentPlayerIndex + " bị bust với " + finalSum + " điểm!");
             playerStand(); // Chuyển lượt cho người tiếp theo
+        } 
+        // Kiểm tra Five Card Charlie (5 lá không quá 21 = thắng tự động)
+        else if (playersHands.get(currentPlayerIndex).size() == 5) {
+            playersResults.set(currentPlayerIndex, "Five Card Charlie - Thắng!");
+            System.out.println("Player " + currentPlayerIndex + " đạt Five Card Charlie với " + finalSum + " điểm - Thắng tự động!");
+            playerStand(); // Chuyển lượt cho người tiếp theo
+        }
+        // Kiểm tra Blackjack (21 điểm)
+        else if (finalSum == 21) {
+            System.out.println("Player " + currentPlayerIndex + " đạt 21 điểm!");
+            playerStand(); // Tự động stand khi đạt 21
         }
     }
 
