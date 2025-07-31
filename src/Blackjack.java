@@ -12,7 +12,6 @@ public class Blackjack implements Serializable {
     Random random = new Random();
 
     // Dealer
-    Card hiddenCard;
     ArrayList<Card> dealerHand;
     int dealerSum;
     int dealerAceCount;
@@ -145,25 +144,106 @@ public class Blackjack implements Serializable {
             
             // Chia cho dealer
             Card dealerCard = deck.remove(deck.size() - 1);
-            if (round == 0) {
-                // Lá đầu tiên của dealer bị ẩn
-                hiddenCard = dealerCard;
-            }
             dealerHand.add(dealerCard);
-            dealerSum += dealerCard.getValue();
-            if (dealerCard.isAce()) {
-                dealerAceCount++;
+            
+            // Chỉ tính điểm cho lá thứ 2 của dealer (lá đầu ẩn)
+            if (round == 1) {
+                dealerSum += dealerCard.getValue();
+                if (dealerCard.isAce()) {
+                    dealerAceCount++;
+                }
             }
         }
         
-        // Reduce aces nếu cần
+        // Tính điểm chính xác cho tất cả players từ đầu
         for (int i = 0; i < numberOfPlayers; i++) {
-            playersSums.set(i, reducePlayerAce(playersSums.get(i), playersAceCounts.get(i)));
+            int totalSum = 0;
+            int aceCount = 0;
+            
+            // Tính tổng điểm thô từ tất cả lá bài
+            for (Card c : playersHands.get(i)) {
+                totalSum += c.getValue();
+                if (c.isAce()) {
+                    aceCount++;
+                }
+            }
+            
+            // Áp dụng logic A tối ưu và cập nhật
+            int optimizedSum = calculateOptimalScore(totalSum, aceCount);
+            playersSums.set(i, optimizedSum);
+            playersAceCounts.set(i, aceCount);
         }
-        dealerSum = reduceDealerAce();
         
-        currentGameState = GameState.PLAYER_TURN;
-        System.out.println("Đã chia bài xong! Chuyển sang PLAYER_TURN");
+        // Kiểm tra Blackjack tự nhiên
+        checkNaturalBlackjacks();
+        
+        // Nếu không có ai có Blackjack, bắt đầu lượt chơi
+        if (currentGameState == GameState.DEALING) {
+            currentGameState = GameState.PLAYER_TURN;
+            currentPlayerIndex = 0;
+            System.out.println("Đã chia bài xong! Chuyển sang PLAYER_TURN");
+        }
+    }
+    
+    // THÊM: Kiểm tra Blackjack tự nhiên (21 điểm với 2 lá đầu)
+    private void checkNaturalBlackjacks() {
+        boolean anyPlayerHasBlackjack = false;
+        boolean dealerHasBlackjack = false;
+        
+        // Kiểm tra dealer có blackjack không (cần tính cả lá ẩn)
+        Card dealerHiddenCard = dealerHand.get(0);
+        Card visibleCard = dealerHand.get(1);
+        int dealerTotal = dealerHiddenCard.getValue() + visibleCard.getValue();
+        int dealerAces = (dealerHiddenCard.isAce() ? 1 : 0) + (visibleCard.isAce() ? 1 : 0);
+        dealerTotal = calculateOptimalScore(dealerTotal, dealerAces);
+        
+        if (dealerTotal == 21) {
+            dealerHasBlackjack = true;
+        }
+        
+        // Kiểm tra players có blackjack không
+        for (int i = 0; i < numberOfPlayers; i++) {
+            if (playersSums.get(i) == 21) {
+                anyPlayerHasBlackjack = true;
+                playersResults.set(i, "Blackjack!");
+            }
+        }
+        
+        // Nếu có Blackjack, xử lý ngay
+        if (anyPlayerHasBlackjack || dealerHasBlackjack) {
+            // Lật lá ẩn của dealer
+            dealerSum = dealerTotal;
+            dealerAceCount = dealerAces;
+            
+            currentGameState = GameState.GAME_OVER;
+            determineBlackjackResults(dealerHasBlackjack);
+        }
+    }
+    
+    // THÊM: Xử lý kết quả khi có Blackjack
+    private void determineBlackjackResults(boolean dealerHasBlackjack) {
+        for (int i = 0; i < numberOfPlayers; i++) {
+            int playerSum = playersSums.get(i);
+            int betAmount = playersBets.get(i);
+            int currentMoney = playersMoneys.get(i);
+            
+            if (playerSum == 21 && dealerSum == 21) {
+                // Cả hai đều có Blackjack = Hòa
+                playersResults.set(i, "Hòa!");
+                playersMoneys.set(i, currentMoney + betAmount); // Hoàn tiền
+            } else if (playerSum == 21) {
+                // Chỉ player có Blackjack = Thắng 3:2
+                playersResults.set(i, "Blackjack!");
+                playersMoneys.set(i, currentMoney + betAmount + (betAmount * 3 / 2)); // Hoàn tiền + thắng 1.5x
+            } else if (dealerSum == 21) {
+                // Chỉ dealer có Blackjack = Player thua
+                playersResults.set(i, "Thua!");
+                // Tiền đã bị trừ khi đặt cược
+            } else {
+                // Không ai có Blackjack, tiếp tục game bình thường
+                playersResults.set(i, "");
+            }
+        }
     }
 
     public void playerHit() {
@@ -174,19 +254,30 @@ public class Blackjack implements Serializable {
         Card card = deck.remove(deck.size() - 1);
         playersHands.get(currentPlayerIndex).add(card);
         
-        int newSum = playersSums.get(currentPlayerIndex) + card.getValue();
-        int newAceCount = playersAceCounts.get(currentPlayerIndex);
-        if (card.isAce()) {
-            newAceCount++;
+        // Tính lại toàn bộ điểm từ đầu để đảm bảo chính xác
+        int totalSum = 0;
+        int aceCount = 0;
+        
+        for (Card c : playersHands.get(currentPlayerIndex)) {
+            totalSum += c.getValue();
+            if (c.isAce()) {
+                aceCount++;
+            }
         }
         
-        newSum = reducePlayerAce(newSum, newAceCount);
-        playersSums.set(currentPlayerIndex, newSum);
-        playersAceCounts.set(currentPlayerIndex, newAceCount);
+        // Áp dụng logic tính A tối ưu
+        int finalSum = calculateOptimalScore(totalSum, aceCount);
+        
+        // Cập nhật điểm và số A
+        playersSums.set(currentPlayerIndex, finalSum);
+        playersAceCounts.set(currentPlayerIndex, aceCount);
 
-        if (newSum > 21) {
-            // Player bị bust, chuyển sang người tiếp theo
-            playerStand();
+        // Kiểm tra nếu quá 21 điểm
+        if (finalSum > 21) {
+            // Player bị bust - thua ngay lập tức
+            playersResults.set(currentPlayerIndex, "Thua!");
+            System.out.println("Player " + currentPlayerIndex + " bị bust với " + finalSum + " điểm!");
+            playerStand(); // Chuyển lượt cho người tiếp theo
         }
     }
 
@@ -204,19 +295,42 @@ public class Blackjack implements Serializable {
     }
     
     private void dealerPlay() {
-        // Lật lá ẩn của dealer
+        // Lật lá ẩn của dealer và tính lại điểm từ đầu
         System.out.println("Dealer bắt đầu chơi...");
+        
+        // Tính lại điểm dealer từ tất cả lá bài hiện có
+        dealerSum = 0;
+        dealerAceCount = 0;
+        for (Card card : dealerHand) {
+            dealerSum += card.getValue();
+            if (card.isAce()) {
+                dealerAceCount++;
+            }
+        }
+        dealerSum = calculateOptimalScore(dealerSum, dealerAceCount);
+        
+        System.out.println("Điểm dealer ban đầu: " + dealerSum);
         
         // Dealer rút bài cho đến khi >= 17
         while (dealerSum < 17) {
             Card card = deck.remove(deck.size() - 1);
             dealerHand.add(card);
-            dealerSum += card.getValue();
-            if (card.isAce()) {
-                dealerAceCount++;
+            
+            // Tính lại toàn bộ điểm từ đầu
+            dealerSum = 0;
+            dealerAceCount = 0;
+            for (Card c : dealerHand) {
+                dealerSum += c.getValue();
+                if (c.isAce()) {
+                    dealerAceCount++;
+                }
             }
-            dealerSum = reduceDealerAce();
+            dealerSum = calculateOptimalScore(dealerSum, dealerAceCount);
+            
+            System.out.println("Dealer rút " + card + ", tổng điểm: " + dealerSum);
         }
+        
+        System.out.println("Dealer kết thúc với " + dealerSum + " điểm");
         
         // Kết thúc game và tính kết quả
         currentGameState = GameState.GAME_OVER;
@@ -229,25 +343,43 @@ public class Blackjack implements Serializable {
             int betAmount = playersBets.get(i);
             int currentMoney = playersMoneys.get(i);
             
+            // Kiểm tra nếu player đã bị đánh dấu thua trước đó (quá 21)
+            String currentResult = playersResults.get(i);
+            if (currentResult != null && currentResult.contains("Thua")) {
+                // Player đã thua từ trước (quá 21), kiểm tra dealer
+                if (dealerSum > 21) {
+                    // Cả hai đều quá 21 -> Hòa
+                    playersResults.set(i, "Hòa!");
+                    playersMoneys.set(i, currentMoney + betAmount); // Hoàn tiền cược
+                }
+                // Nếu dealer không quá 21, player vẫn thua (giữ nguyên kết quả)
+                continue;
+            }
+            
+            // Xử lý các trường hợp khác
             if (playerSum > 21) {
-                // Player bust
-                playersResults.set(i, "Thua (Bust)");
-                // Tiền cược đã bị trừ khi đặt cược
+                // Player bust (trường hợp này không nên xảy ra vì đã xử lý ở trên)
+                if (dealerSum > 21) {
+                    playersResults.set(i, "Hòa!");
+                    playersMoneys.set(i, currentMoney + betAmount);
+                } else {
+                    playersResults.set(i, "Thua!");
+                }
             } else if (dealerSum > 21) {
                 // Dealer bust, player thắng
-                playersResults.set(i, "Thắng (Dealer Bust)");
-                playersMoneys.set(i, currentMoney + betAmount * 2); // Hoàn tiền + thắng
+                playersResults.set(i, "Thắng!");
+                playersMoneys.set(i, currentMoney + betAmount * 2); // Hoàn tiền + thắng 1:1
             } else if (playerSum > dealerSum) {
                 // Player có điểm cao hơn
-                playersResults.set(i, "Thắng");
+                playersResults.set(i, "Thắng!");
                 playersMoneys.set(i, currentMoney + betAmount * 2);
             } else if (playerSum == dealerSum) {
                 // Hòa
-                playersResults.set(i, "Hòa");
+                playersResults.set(i, "Hòa!");
                 playersMoneys.set(i, currentMoney + betAmount); // Hoàn tiền cược
             } else {
                 // Player thua
-                playersResults.set(i, "Thua");
+                playersResults.set(i, "Thua!");
                 // Tiền cược đã bị trừ
             }
         }
@@ -275,28 +407,79 @@ public class Blackjack implements Serializable {
         Collections.shuffle(deck, random);
     }
 
-    public int reducePlayerAce(int playerSum, int playerAceCount) {
-        while (playerSum > 21 && playerAceCount > 0) {
-            playerSum -= 10;
-            playerAceCount--;
+    // Phương thức tính điểm tối ưu cho con A (11, 10, hoặc 1)
+    private int calculateOptimalScore(int sum, int aceCount) {
+        if (aceCount == 0) return sum;
+        
+        // Nếu điểm hiện tại <= 21, không cần điều chỉnh
+        if (sum <= 21) return sum;
+        
+        // Thử giảm A từ 11 xuống 1 (giảm 10 điểm mỗi lần)
+        int adjustedSum = sum;
+        int acesToReduce = aceCount;
+        
+        while (adjustedSum > 21 && acesToReduce > 0) {
+            adjustedSum -= 10; // Chuyển A từ 11 thành 1
+            acesToReduce--;
         }
-        return playerSum;
+        
+        return adjustedSum;
+    }
+
+    public int reducePlayerAce(int playerSum, int playerAceCount) {
+        return calculateOptimalScore(playerSum, playerAceCount);
     }
 
     public int reduceDealerAce() {
-        while (dealerSum > 21 && dealerAceCount > 0) {
-            dealerSum -= 10;
-            dealerAceCount--;
-        }
+        dealerSum = calculateOptimalScore(dealerSum, dealerAceCount);
         return dealerSum;
     }
 
     // Getters
     public List<String> getPlayersResults() { return playersResults; }
     public List<ArrayList<Card>> getPlayersHands() { return playersHands; }
-    public List<Integer> getPlayersSums() { return playersSums; }
+    
+    // Getter cho điểm đã được tính toán chính xác
+    public List<Integer> getPlayersSums() { 
+        // Đảm bảo tất cả điểm đều được tính chính xác với A
+        List<Integer> correctSums = new ArrayList<>();
+        for (int i = 0; i < numberOfPlayers; i++) {
+            int rawSum = playersSums.get(i);
+            int aceCount = playersAceCounts.get(i);
+            correctSums.add(calculateOptimalScore(rawSum, aceCount));
+        }
+        return correctSums;
+    }
+    
+    // Getter cho điểm của một player cụ thể
+    public int getPlayerSum(int playerIndex) {
+        if (playerIndex >= 0 && playerIndex < numberOfPlayers) {
+            int rawSum = playersSums.get(playerIndex);
+            int aceCount = playersAceCounts.get(playerIndex);
+            return calculateOptimalScore(rawSum, aceCount);
+        }
+        return 0;
+    }
+    
     public ArrayList<Card> getDealerHand() { return dealerHand; }
-    public int getDealerSum() { return dealerSum; }
+    
+    // Getter cho điểm dealer được tính chính xác
+    public int getDealerSum() { 
+        // Tính lại điểm dealer từ tất cả lá bài để đảm bảo chính xác
+        if (dealerHand == null || dealerHand.isEmpty()) return 0;
+        
+        int sum = 0;
+        int aceCount = 0;
+        for (Card card : dealerHand) {
+            sum += card.getValue();
+            if (card.isAce()) {
+                aceCount++;
+            }
+        }
+        
+        return calculateOptimalScore(sum, aceCount);
+    }
+    
     public GameState getCurrentGameState() { return currentGameState; }
     public int getCurrentPlayerIndex() { return currentPlayerIndex; }
 }

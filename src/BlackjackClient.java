@@ -110,6 +110,30 @@ public class BlackjackClient {
     private static final Font PLAYER_FONT = new Font("Arial", Font.BOLD, 18);
     private static final Font CARD_COUNT_FONT = new Font("Arial", Font.PLAIN, 14);
 
+    // Phương thức tính điểm chính xác cho con A (copy từ Blackjack.java)
+    private int calculatePlayerScore(ArrayList<Card> hand) {
+        if (hand == null || hand.isEmpty()) return 0;
+        
+        int sum = 0;
+        int aceCount = 0;
+        
+        // Tính tổng điểm thô
+        for (Card card : hand) {
+            sum += card.getValue();
+            if (card.isAce()) {
+                aceCount++;
+            }
+        }
+        
+        // Áp dụng logic A tối ưu
+        while (sum > 21 && aceCount > 0) {
+            sum -= 10; // Chuyển A từ 11 thành 1
+            aceCount--;
+        }
+        
+        return sum;
+    }
+
 
     // Constructor với IP và port tùy chỉnh (từ HomeScreen)
     public BlackjackClient(String playerName, int volumeLevel, String serverIP, int serverPort) {
@@ -423,7 +447,14 @@ public class BlackjackClient {
         // Vẽ dealer label
         g2d.setColor(Color.GRAY);
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        String dealerText = "DEALER: " + (currentGameState == Blackjack.GameState.GAME_OVER ? dealerSum : "?");
+        
+        // Tính điểm dealer chính xác từ lá bài
+        int correctDealerSum = dealerSum; // Mặc định dùng giá trị từ server
+        if (currentGameState == Blackjack.GameState.GAME_OVER && dealerHand != null && !dealerHand.isEmpty()) {
+            correctDealerSum = calculatePlayerScore(dealerHand); // Tính lại chính xác
+        }
+        
+        String dealerText = "DEALER: " + (currentGameState == Blackjack.GameState.GAME_OVER ? correctDealerSum : "?");
         g2d.drawString(dealerText, dealerCardsX, dealerAreaY);
         
         // Vẽ dealer cards với shadow
@@ -473,6 +504,12 @@ public class BlackjackClient {
         String playerInfo;
         if (shouldShowRealCards) {
             int sum = (playersSums != null && playersSums.size() > playerId) ? playersSums.get(playerId) : 0;
+            
+            // Tính lại điểm với logic A tối ưu để hiển thị chính xác
+            if (playersHands != null && playersHands.size() > playerId && playersHands.get(playerId) != null) {
+                sum = calculatePlayerScore(playersHands.get(playerId));
+            }
+            
             playerInfo = displayName + ": " + sum + " điểm";
         } else {
             playerInfo = displayName + ": ???";
@@ -560,7 +597,15 @@ public class BlackjackClient {
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         metrics = g2d.getFontMetrics();
         for(int i = 0; i < playersResults.size(); i++){
-            String resultText = playersNames.get(i) + ": " + playersResults.get(i) + " (" + playersSums.get(i) + " điểm)";
+            // Tính điểm chính xác từ lá bài thay vì dùng playersSums cũ
+            int correctScore = 0;
+            if (playersHands != null && i < playersHands.size() && playersHands.get(i) != null) {
+                correctScore = calculatePlayerScore(playersHands.get(i));
+            } else if (playersSums != null && i < playersSums.size()) {
+                correctScore = playersSums.get(i);
+            }
+            
+            String resultText = playersNames.get(i) + ": " + playersResults.get(i) + " (" + correctScore + " điểm)";
             
             // Màu theo kết quả
             if (playersResults.get(i).contains("Thắng")) {
@@ -614,16 +659,68 @@ public class BlackjackClient {
 
     private void connectToServer() {
         try {
-            statusLabel.setText("Đang kết nối tới server...");
-            Socket socket = new Socket(serverHost, serverPort);
+            statusLabel.setText("Đang kết nối tới " + serverHost + ":" + serverPort + "...");
+            
+            // Thử kết nối với timeout
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(serverHost, serverPort), 10000); // 10 second timeout
+            
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
             out.writeObject(this.playerName);
             out.flush();
-            statusLabel.setText("Đã kết nối! Đang chờ người chơi khác...");
+            
+            statusLabel.setText("✅ Đã kết nối! Đang chờ người chơi khác...");
+            System.out.println("🎯 Kết nối thành công tới " + serverHost + ":" + serverPort);
+            
             listenForServerUpdates();
+            
+        } catch (ConnectException e) {
+            String errorMsg = "❌ Không thể kết nối tới server!\n\n" +
+                           "🔍 Nguyên nhân có thể:\n" +
+                           "• Server chưa được khởi động\n" +
+                           "• IP hoặc Port không đúng\n" +
+                           "• Firewall chặn kết nối\n" +
+                           "• Không cùng mạng LAN\n\n" +
+                           "💡 Hãy thử:\n" +
+                           "1. Kiểm tra server đã chạy chưa\n" +
+                           "2. Ping IP: " + serverHost + "\n" +
+                           "3. Tắt firewall tạm thời\n" +
+                           "4. Dùng localhost nếu cùng máy";
+            
+            statusLabel.setText("❌ Không thể kết nối tới server");
+            
+            JOptionPane.showMessageDialog(frame, errorMsg, 
+                "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+            
+            System.err.println("Connection refused to " + serverHost + ":" + serverPort);
+            
+        } catch (SocketTimeoutException e) {
+            String errorMsg = "⏰ Timeout khi kết nối!\n\n" +
+                           "Server không phản hồi trong 10 giây.\n" +
+                           "Kiểm tra mạng và thử lại.";
+            
+            statusLabel.setText("⏰ Timeout kết nối");
+            JOptionPane.showMessageDialog(frame, errorMsg, 
+                "Timeout", JOptionPane.WARNING_MESSAGE);
+                
+        } catch (UnknownHostException e) {
+            String errorMsg = "🌐 Không tìm thấy server!\n\n" +
+                           "IP address không tồn tại: " + serverHost + "\n" +
+                           "Kiểm tra lại địa chỉ IP.";
+            
+            statusLabel.setText("🌐 IP không tồn tại");
+            JOptionPane.showMessageDialog(frame, errorMsg, 
+                "IP không hợp lệ", JOptionPane.ERROR_MESSAGE);
+                
         } catch (IOException e) {
-            statusLabel.setText("Không thể kết nối tới server.");
+            String errorMsg = "💥 Lỗi mạng: " + e.getMessage() + "\n\n" +
+                           "Kiểm tra kết nối mạng và thử lại.";
+            
+            statusLabel.setText("💥 Lỗi kết nối");
+            JOptionPane.showMessageDialog(frame, errorMsg, 
+                "Lỗi", JOptionPane.ERROR_MESSAGE);
+            
             e.printStackTrace();
         }
     }
