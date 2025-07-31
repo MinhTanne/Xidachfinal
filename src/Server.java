@@ -6,11 +6,26 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Class Server - Server chính của game Blackjack multiplayer
+ * Quản lý kết nối từ nhiều client, tạo phòng chơi và điều phối game session
+ * Hỗ trợ đến 3 người chơi cùng lúc trong một phòng
+ */
 public class Server {
     private static int PORT = 12345; // Cho phép thay đổi port
     private static final ExecutorService pool = Executors.newFixedThreadPool(10);
     private static final List<ClientHandler> waitingPlayers = new ArrayList<>();
 
+    /**
+     * Phương thức main - Entry point của server
+     * @param args Tham số dòng lệnh (có thể chứa port number)
+     * Chức năng:
+     * - Đọc port từ command line (nếu có)
+     * - Tạo ServerSocket và lắng nghe kết nối
+     * - Hiển thị thông tin server (IP addresses, port)
+     * - Accept và xử lý từng client connection
+     * - Tạo game session khi đủ người chơi
+     */
     public static void main(String[] args) throws IOException {
         // Cho phép người dùng chọn port khác
         if (args.length > 0) {
@@ -244,7 +259,6 @@ class GameSession implements Runnable {
         System.out.println("Game session đã kết thúc và dọn dẹp.");
     }
     
-    // --- Giữ nguyên các hàm còn lại ---
     private void handleNewGameRequest(int playerId) {
         if (playerId == 0) player1WantsNewGame = true;
         else player2WantsNewGame = true;

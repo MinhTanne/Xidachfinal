@@ -3,15 +3,26 @@ import java.io.File;
 import java.io.IOException;
 import javax.sound.sampled.*;
 
+/**
+ * Class SoundManager - Quản lý âm thanh và nhạc nền của game
+ * Sử dụng Singleton pattern để đảm bảo chỉ có một instance duy nhất
+ * Hỗ trợ phát nhạc nền và hiệu ứng âm thanh với điều khiển âm lượng
+ */
 public class SoundManager {
 
     private static SoundManager instance;
     private Clip musicClip;
     private float volume = 0.75f; // Âm lượng mặc định 75%
 
-    // Sử dụng Singleton Pattern để chỉ có một đối tượng quản lý âm thanh
+    /**
+     * Constructor private - Ngăn tạo instance từ bên ngoài (Singleton pattern)
+     */
     private SoundManager() {}
 
+    /**
+     * Lấy instance duy nhất của SoundManager (Singleton pattern)
+     * @return Instance của SoundManager
+     */
     public static synchronized SoundManager getInstance() {
         if (instance == null) {
             instance = new SoundManager();
@@ -19,7 +30,15 @@ public class SoundManager {
         return instance;
     }
 
-    // Phát nhạc nền
+    /**
+     * Phát nhạc nền liên tục
+     * @param filePath Đường dẫn đến file âm thanh (WAV format)
+     * Chức năng:
+     * - Dừng nhạc cũ nếu đang phát
+     * - Load và phát file nhạc mới
+     * - Lặp lại vô hạn (loop)
+     * - Áp dụng mức âm lượng hiện tại
+     */
     public void playBackgroundMusic(String filePath) {
         // Dừng nhạc cũ nếu đang phát
         if (musicClip != null && musicClip.isRunning()) {

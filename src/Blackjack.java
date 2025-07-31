@@ -5,6 +5,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Class Blackjack - Engine chính của game Blackjack
+ * Chứa toàn bộ logic game, quản lý trạng thái và xử lý luật chơi
+ * Hỗ trợ multiplayer (1-3 người chơi) với hệ thống cược tiền
+ */
 public class Blackjack implements Serializable {
     private static final long serialVersionUID = 2L;
 
@@ -32,7 +37,7 @@ public class Blackjack implements Serializable {
 
     public enum GameState {
         WAITING_FOR_PLAYERS,
-        BETTING,           // THÊM: Trạng thái đặt cược
+        BETTING,           
         DEALING,
         PLAYER_TURN,
         DEALER_TURN,
@@ -40,6 +45,15 @@ public class Blackjack implements Serializable {
     }
     private GameState currentGameState;
 
+    /**
+     * Constructor - Khởi tạo game Blackjack với số lượng người chơi xác định
+     * @param numberOfPlayers Số lượng người chơi (1-3 người)
+     * Chức năng:
+     * - Khởi tạo danh sách lá bài, điểm số, tiền cược cho mỗi người chơi
+     * - Tạo bộ bài và xáo trộn
+     * - Cấp tiền ban đầu cho mỗi người chơi (1000 đồng)
+     * - Đặt trạng thái game là chờ người chơi
+     */
     public Blackjack(int numberOfPlayers) {
         this.numberOfPlayers = numberOfPlayers;
         this.playersHands = new ArrayList<>();
@@ -69,6 +83,14 @@ public class Blackjack implements Serializable {
         shuffleDeck();
     }
 
+    /**
+     * Bắt đầu ván bài mới
+     * Chức năng:
+     * - Reset tất cả dữ liệu từ ván trước (lá bài, điểm số, kết quả)
+     * - Tạo bộ bài mới và xáo trộn
+     * - Đặt trạng thái game sang chế độ cược tiền
+     * - Chuẩn bị cho người chơi đặt cược
+     */
     public void startGame() {
         // Reset cho ván mới
         for (int i = 0; i < numberOfPlayers; i++) {
@@ -83,6 +105,11 @@ public class Blackjack implements Serializable {
         dealerSum = 0;
         dealerAceCount = 0;
         currentPlayerIndex = 0;
+
+        // THÊM: Reset bộ bài mới cho ván mới để tránh hết bài
+        buildDeck();
+        shuffleDeck();
+        System.out.println("🃏 Đã tạo bộ bài mới với " + deck.size() + " lá bài");
 
         // Chuyển sang trạng thái đặt cược
         currentGameState = GameState.BETTING;

@@ -5,6 +5,11 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.MalformedURLException;
 
+/**
+ * Class HomeScreen - Màn hình chính (Home/Menu) của game Blackjack
+ * Chứa giao diện để nhập thông tin người chơi, cài đặt âm lượng và kết nối server
+ * Là cửa sổ đầu tiên người dùng thấy khi khởi động game
+ */
 public class HomeScreen extends JFrame {
     private static final int FRAME_WIDTH = 800;
     private static final int FRAME_HEIGHT = 600;
@@ -20,10 +25,23 @@ public class HomeScreen extends JFrame {
     private JTextField serverPortField;
     private String playerName;
 
+    /**
+     * Constructor - Khởi tạo màn hình Home
+     * Tự động gọi phương thức khởi tạo giao diện
+     */
     public HomeScreen() {
         initializeHomeScreen();
     }
 
+    /**
+     * Khởi tạo giao diện màn hình Home
+     * Chức năng:
+     * - Thiết lập cửa sổ chính (kích thước, tiêu đề, close operation)
+     * - Tạo và bố trí các component UI (text field, button, slider)
+     * - Thiết lập event listener cho các nút bấm
+     * - Bắt đầu phát nhạc nền
+     * - Hiển thị cửa sổ
+     */
     private void initializeHomeScreen() {
         setTitle("♠ BLACKJACK - TRANG CHỦ ♥");
         setSize(FRAME_WIDTH, FRAME_HEIGHT);

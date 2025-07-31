@@ -7,8 +7,17 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.*;
 
+/**
+ * Class BlackjackClient - Client game Blackjack với giao diện đồ họa
+ * Kết nối đến server, hiển thị game UI, xử lý input từ người chơi
+ * Bao gồm: animation lá bài, âm thanh, multiplayer networking
+ */
 public class BlackjackClient {
-    // --- Lớp nội bộ để quản lý một lá bài đang di chuyển ---
+    
+    /**
+     * Inner Class AnimatingCard - Quản lý hiệu ứng di chuyển của lá bài
+     * Tạo animation mượt mà khi chia bài từ deck đến vị trí người chơi
+     */
     private class AnimatingCard {
         Card card;
         double startX, startY, destX, destY;
@@ -16,6 +25,14 @@ public class BlackjackClient {
         int totalSteps = 30;
         int currentStep = 0;
 
+        /**
+         * Constructor tạo animation cho lá bài
+         * @param card Lá bài cần animate
+         * @param startX Tọa độ X bắt đầu
+         * @param startY Tọa độ Y bắt đầu  
+         * @param destX Tọa độ X đích
+         * @param destY Tọa độ Y đích
+         */
         AnimatingCard(Card card, int startX, int startY, int destX, int destY) {
             this.card = card;
             this.startX = startX;
@@ -52,7 +69,7 @@ public class BlackjackClient {
     private String serverHost = "localhost";
     private int serverPort = 12345;
     // Thay đổi vị trí deck về gần sát bên phải
-    private static final int DECK_X = 1250, DECK_Y = 50; // Di chuyển từ 1050 sang 1250
+    private static final int DECK_X = 1250, DECK_Y = 50; 
     private static final int FRAME_WIDTH = 1400;
     private static final int FRAME_HEIGHT = 900;
 
@@ -110,7 +127,7 @@ public class BlackjackClient {
     private static final Font PLAYER_FONT = new Font("Arial", Font.BOLD, 18);
     private static final Font CARD_COUNT_FONT = new Font("Arial", Font.PLAIN, 14);
 
-    // Phương thức tính điểm chính xác cho con A (copy từ Blackjack.java)
+    
     private int calculatePlayerScore(ArrayList<Card> hand) {
         if (hand == null || hand.isEmpty()) return 0;
         
@@ -125,7 +142,7 @@ public class BlackjackClient {
             }
         }
         
-        // Áp dụng logic A tối ưu
+      
         while (sum > 21 && aceCount > 0) {
             sum -= 10; // Chuyển A từ 11 thành 1
             aceCount--;
@@ -134,8 +151,7 @@ public class BlackjackClient {
         return sum;
     }
 
-
-    // Constructor với IP và port tùy chỉnh (từ HomeScreen)
+    // Hàm khởi tạo client
     public BlackjackClient(String playerName, int volumeLevel, String serverIP, int serverPort) {
         this.playerName = playerName;
         this.serverHost = serverIP;
@@ -161,7 +177,7 @@ public class BlackjackClient {
         new Thread(this::connectToServer).start();
     }
 
-    // Constructor cũ (để backward compatibility)
+    // hàm khởi tạo client với tên người chơi   
     public BlackjackClient() {
         getPlayerName();
         initializeUI();
@@ -219,7 +235,6 @@ public class BlackjackClient {
         gamePanel.setBackground(TABLE_COLOR);
         frame.add(gamePanel, BorderLayout.CENTER);
 
-        // Cải thiện button panel
         setupButtonPanel();
         frame.add(buttonPanel, BorderLayout.SOUTH);
         
@@ -505,7 +520,6 @@ public class BlackjackClient {
         if (shouldShowRealCards) {
             int sum = (playersSums != null && playersSums.size() > playerId) ? playersSums.get(playerId) : 0;
             
-            // Tính lại điểm với logic A tối ưu để hiển thị chính xác
             if (playersHands != null && playersHands.size() > playerId && playersHands.get(playerId) != null) {
                 sum = calculatePlayerScore(playersHands.get(playerId));
             }
@@ -889,7 +903,6 @@ public class BlackjackClient {
         standButton.setEnabled(enabled);
     }
     
-    // --- PHƯƠNG THỨC UPDATEUI ĐÃ THÊM CÁC DÒNG DEBUG ---
     private void updateUI() {
         setButtonStateForGameplay(false);
         setBettingButtonsEnabled(false);
